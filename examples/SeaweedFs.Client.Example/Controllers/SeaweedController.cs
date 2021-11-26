@@ -10,9 +10,11 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using SeaweedFs.Filer.Internals.Operations.Outbound;
 using SeaweedFs.Filer.Store;
 using SeaweedFs.Store;
 
@@ -81,21 +83,38 @@ namespace SeaweedFs.Client.Example.Controllers
             {
                 _logger.LogInformation($"File Created: {outboundFileStream.Name}");
 
+
                 //get catalog
-                var catalog = _filerStore.GetCatalog("documents");
+                var catalog = _filerStore.GetCatalog("/documents");
 
-                //delete all files
-                Parallel.ForEach(await catalog.ListAsync(), bi => catalog.DeleteAsync(bi).ConfigureAwait(false));
-
+                var flr = (await catalog.ListAsync());
+                if (flr.Entries.Count != 0)
+                {
+                    flr.Entries.ForEach(f =>
+                    {
+                        _logger.LogInformation($"File: {f.FullPath} size:{f.FileSize} create:{f.Crtime} ttl:{(f.TtlSec <= 0 ? "infinite" : TimeSpan.FromSeconds(f.TtlSec).ToString())} {string.Join("\r\n", f.Extended.Select(z => $"{z.Key}={string.Join(",", z.Value)}"))}");
+                    });
+                    //delete all files
+                    //Parallel.ForEach(files, bi => catalog.DeleteAsync(bi).ConfigureAwait(false));
+                }
                 //create simple blob
-                var blob = new Blob($"{Guid.NewGuid()}.txt", outboundFileStream);
+                var blob = new Blob($"{outboundFileStream.Name}.txt", outboundFileStream);
 
                 //add custom header value
-                blob.BlobInfo.Headers.Add("Seaweed-OwnerId", new[] {$"{Guid.NewGuid()}"});
+                var fileOp = new UploadFileOption
+                {
+                    ttl = Ttl.FromDays(7),
+                };
+                blob.BlobInfo.Headers.Add("Seaweed-OwnerId", new[] { $"{Guid.NewGuid()}" });
 
                 //push blob
                 await catalog.PushAsync(blob,
-                    progress: new Progress<int>(p => { _logger.LogInformation($"Upload progress: {p} %"); }));
+                    progress: new Progress<int>(p => { _logger.LogInformation($"Upload progress: {p} %"); }),
+                    uploadFileOption: fileOp
+                    );
+
+                System.IO.File.Delete(outboundFileStream.Name);
+                _logger.LogInformation($"File Deleted: {outboundFileStream.Name}");
 
                 using (var uploadedBlob = await catalog.GetAsync(blob.BlobInfo.Name,
                            progress: new Progress<int>(p => { _logger.LogInformation($"Download progress: {p} %"); })))
@@ -108,8 +127,6 @@ namespace SeaweedFs.Client.Example.Controllers
                     }
                 }
 
-                System.IO.File.Delete(outboundFileStream.Name);
-                _logger.LogInformation($"File Deleted: {outboundFileStream.Name}");
             }
 
             return Ok();

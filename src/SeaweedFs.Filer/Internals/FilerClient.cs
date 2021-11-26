@@ -46,8 +46,12 @@ namespace SeaweedFs.Filer.Internals
         /// <param name="httpRequestMessage">The HTTP request message.</param>
         /// <param name="httpCompletionOption">The HTTP completion option.</param>
         /// <returns>Task&lt;HttpResponseMessage&gt;.</returns>
-        Task<HttpResponseMessage> IFilerClient.SendAsync(HttpRequestMessage httpRequestMessage,
-            HttpCompletionOption httpCompletionOption, CancellationToken cancellationToken = default) =>
+        Task<HttpResponseMessage> IFilerClient.SendAsync(
+            HttpRequestMessage httpRequestMessage,
+            HttpCompletionOption httpCompletionOption,
+#pragma warning disable CS1066 // 指定的默认值将不起任何作用，因为它适用于不允许可选参数的上下文中使用的成员
+            CancellationToken cancellationToken = default(CancellationToken)) =>
+#pragma warning restore CS1066 // 指定的默认值将不起任何作用，因为它适用于不允许可选参数的上下文中使用的成员
             _httpClient.SendAsync(httpRequestMessage, httpCompletionOption, cancellationToken);
     }
 }

@@ -21,7 +21,10 @@ namespace SeaweedFs.Operations
     /// </summary>
     /// <seealso cref="OperationBase" />
     /// <seealso cref="System.IDisposable" />
-    internal abstract class OutboundStreamOperation : OperationBase, IDisposable, IAsyncDisposable
+    internal abstract class OutboundStreamOperation : OperationBase, IDisposable
+#if NET5_0_OR_GREATER
+        , IAsyncDisposable
+#endif
     {
         /// <summary>
         ///     The stream
@@ -37,13 +40,13 @@ namespace SeaweedFs.Operations
             IProgress<int> progress = null)
             : base(cancellationToken, progress) =>
             _stream = stream;
-
+#if NET5_0_OR_GREATER
         /// <summary>
         ///     Disposes the asynchronous.
         /// </summary>
         /// <returns>ValueTask.</returns>
         public ValueTask DisposeAsync() => _stream?.DisposeAsync() ?? ValueTask.CompletedTask;
-
+#endif
         /// <summary>
         ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
@@ -62,7 +65,7 @@ namespace SeaweedFs.Operations
             _progress?.Report(0);
             while (_stream.Position < _stream.Length)
             {
-                var pos = (int) Math.Round(100 * (_stream.Position / (double) _stream.Length));
+                var pos = (int)Math.Round(100 * (_stream.Position / (double)_stream.Length));
                 if (pos != prevPos)
                     _progress?.Report(pos);
                 prevPos = pos;

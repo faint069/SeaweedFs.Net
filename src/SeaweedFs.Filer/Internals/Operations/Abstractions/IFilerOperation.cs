@@ -8,6 +8,7 @@
 // ***********************************************************************
 
 using System.Threading.Tasks;
+using SeaweedFs.Infrastructure.Protocol;
 using SeaweedFs.Operations;
 
 namespace SeaweedFs.Filer.Internals.Operations.Abstractions

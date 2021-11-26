@@ -52,21 +52,14 @@ namespace SeaweedFs.Http
         /// <exception cref="HttpRequestResult">response.IsSuccessStatusCode, response.StatusCode, response.Content</exception>
         public async Task<HttpRequestResult> Send(Func<TRequestBuilder, TRequestBuilder> httpRequestBuilder, HttpCompletionOption httpCompletionOption = HttpCompletionOption.ResponseContentRead)
         {
-            try
-            {
-                var httpRequest = httpRequestBuilder(_requestBuilder)
-                    .Build();
+            var httpRequest = httpRequestBuilder(_requestBuilder)
+                .Build();
 
-                var response = await _httpClient.SendAsync(httpRequest, httpCompletionOption);
+            var response = await _httpClient.SendAsync(httpRequest, httpCompletionOption);
 #if DEBUG
-                Console.WriteLine($"\n\n\n{await response.Content.ReadAsStringAsync()}\n\n\n");
+            Console.WriteLine($"\n\n\n{await response.Content.ReadAsStringAsync()}\n\n\n");
 #endif
-                return new HttpRequestResult(response.IsSuccessStatusCode, response.StatusCode, response.Content);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            return new HttpRequestResult(response.IsSuccessStatusCode, response.StatusCode, response.Content);
         }
         /// <summary>
         /// Gets the stream.

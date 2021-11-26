@@ -11,6 +11,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using SeaweedFs.Filer.Internals.Operations.Outbound;
+using SeaweedFs.Infrastructure.Protocol;
 using SeaweedFs.Store;
 
 namespace SeaweedFs.Filer.Store.Catalog
@@ -31,8 +33,9 @@ namespace SeaweedFs.Filer.Store.Catalog
         /// </summary>
         /// <param name="blob">The BLOB.</param>
         /// <param name="progress">The progress.</param>
+        /// <param name="progress">uploadFileOption</param>
         /// <returns>Task&lt;HttpResponseMessage&gt;.</returns>
-        Task<bool> PushAsync(Blob blob, CancellationToken cancellationToken = default, IProgress<int> progress = null);
+        Task<bool> PushAsync(Blob blob, CancellationToken cancellationToken = default, IProgress<int> progress = null, IUploadFileOption uploadFileOption = null);
 
         /// <summary>
         ///     Gets the specified file name.
@@ -58,11 +61,13 @@ namespace SeaweedFs.Filer.Store.Catalog
         /// <param name="blobInfo">The BLOB information.</param>
         /// <returns>Task&lt;System.Boolean&gt;.</returns>
         Task<bool> DeleteAsync(BlobInfo blobInfo);
-
         /// <summary>
         ///     Lists this instance.
         /// </summary>
+        /// <param name="lastFileName">用作游标的文件名，可以用来翻页（下一页）</param>
+        /// <param name="namePattern">文件名通配符 match file names, case-sensitive wildcard characters '*' and '?'</param>
+        /// <param name="namePatternExclude">用于排除的文件名通配符 nagetive match file names, case-sensitive wildcard characters '*' and '?'</param>
         /// <returns>Task&lt;IEnumerable&lt;BlobInfo&gt;&gt;.</returns>
-        Task<IEnumerable<BlobInfo>> ListAsync();
+        Task<DirectoryFileEntriesResponse> ListAsync(string lastFileName = null, string namePattern = null, string namePatternExclude = null, int limit = 100);
     }
 }

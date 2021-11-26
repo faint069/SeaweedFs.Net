@@ -329,3 +329,4 @@ ASALocalRun/
 .mfractor/
 
 logs/
+/examples/SeaweedFs.Client.Example/weedfs/data

@@ -84,7 +84,7 @@ namespace SeaweedFs.Http
         /// <returns>IHttpRequestBuilder.</returns>
         public IHttpRequestBuilder WithHeaders(IDictionary<string, IEnumerable<string>> headers)
         {
-            foreach (var (name, value) in headers) _httpRequestMessage.Headers.Add(name, value);
+            foreach (var kv in headers) _httpRequestMessage.Headers.Add(kv.Key, kv.Value);
 
             return this;
         }

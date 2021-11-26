@@ -38,17 +38,25 @@ namespace SeaweedFs.Filer
         /// <returns>IServiceCollection.</returns>
         public static IServiceCollection AddSeaweedFiler(this IServiceCollection serviceCollection, string url)
         {
-            serviceCollection.AddMemoryCache();
+            //serviceCollection.AddMemoryCache();
             serviceCollection.AddHttpClient(url, c =>
             {
                 c.BaseAddress = new Uri(url);
                 c.DefaultRequestHeaders.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
+                    new MediaTypeWithQualityHeaderValue(
+#if NETSTANDARD2_0
+                        "application/json"
+#else
+                        MediaTypeNames.Application.Json
+#endif
+
+                        ));
             }).AddPolicyHandler(message =>
             {
                 return HttpPolicyExtensions
                     .HandleTransientHttpError()
-                    .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    //should not retry if dir or file not exists. should retry by caller, not in the core
+                    //.OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
                     .WaitAndRetryAsync(6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2,
                         retryAttempt)));
             });
@@ -73,33 +81,33 @@ namespace SeaweedFs.Filer
         }
 
 
-        /// <summary>
-        /// Gets the options.
-        /// </summary>
-        /// <typeparam name="TModel">The type of the t model.</typeparam>
-        /// <param name="serviceCollection">The service collection.</param>
-        /// <param name="sectionName">Name of the section.</param>
-        /// <returns>TModel.</returns>
-        public static TModel GetOptions<TModel>(this IServiceCollection serviceCollection, string sectionName) where TModel : class, new()
-        {
-            using var serviceProvider = serviceCollection.BuildServiceProvider();
-            var configuration = serviceProvider.GetService<IConfiguration>();
-            return configuration.GetOptions<TModel>(sectionName);
-        }
-        /// <summary>
-        /// Gets the options.
-        /// </summary>
-        /// <typeparam name="TModel">The type of the t model.</typeparam>
-        /// <param name="configuration">The configuration.</param>
-        /// <param name="sectionName">Name of the section.</param>
-        /// <returns>TModel.</returns>
-        public static TModel GetOptions<TModel>(this IConfiguration configuration, string sectionName)
-            where TModel : new()
-        {
-            var model = new TModel();
-            configuration.GetSection(sectionName).Bind(model);
-            return model;
-        }
+        ///// <summary>
+        ///// Gets the options.
+        ///// </summary>
+        ///// <typeparam name="TModel">The type of the t model.</typeparam>
+        ///// <param name="serviceCollection">The service collection.</param>
+        ///// <param name="sectionName">Name of the section.</param>
+        ///// <returns>TModel.</returns>
+        //public static TModel GetOptions<TModel>(this IServiceCollection serviceCollection, string sectionName) where TModel : class, new()
+        //{
+        //    using var serviceProvider = serviceCollection.BuildServiceProvider();
+        //    var configuration = serviceProvider.GetService<IConfiguration>();
+        //    return configuration.GetOptions<TModel>(sectionName);
+        //}
+        ///// <summary>
+        ///// Gets the options.
+        ///// </summary>
+        ///// <typeparam name="TModel">The type of the t model.</typeparam>
+        ///// <param name="configuration">The configuration.</param>
+        ///// <param name="sectionName">Name of the section.</param>
+        ///// <returns>TModel.</returns>
+        //public static TModel GetOptions<TModel>(this IConfiguration configuration, string sectionName)
+        //    where TModel : new()
+        //{
+        //    var model = new TModel();
+        //    configuration.GetSection(sectionName).Bind(model);
+        //    return model;
+        //}
         /// <summary>
         /// Adds the factory.
         /// </summary>
@@ -115,7 +123,5 @@ namespace SeaweedFs.Filer
             serviceCollection.AddSingleton<Func<TService>>(x => () => x.GetService<TService>());
             return serviceCollection;
         }
-
-
     }
 }

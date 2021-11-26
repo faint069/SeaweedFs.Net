@@ -10,11 +10,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SeaweedFs.Filer.Internals.Operations;
 using SeaweedFs.Filer.Internals.Operations.Inbound;
 using SeaweedFs.Filer.Internals.Operations.Outbound;
+using SeaweedFs.Infrastructure.Protocol;
 using SeaweedFs.Store;
 
 namespace SeaweedFs.Filer.Store.Catalog
@@ -47,7 +49,7 @@ namespace SeaweedFs.Filer.Store.Catalog
         {
             if (!directory.EndsWith("/")) directory += "/";
             if (!string.IsNullOrEmpty(Path.GetFileName(directory))) throw new ArgumentException(nameof(directory));
-            Directory = Path.GetDirectoryName(directory);
+            Directory = Path.GetDirectoryName(directory) ?? string.Empty;
             _filerStore = filerStore;
             _executor = executor;
         }
@@ -72,13 +74,43 @@ namespace SeaweedFs.Filer.Store.Catalog
         /// <summary>
         ///     Lists this instance.
         /// </summary>
+        /// <param name="lastFileName">用作游标的文件名，可以用来翻页（下一页）</param>
+        /// <param name="namePattern">文件名通配符 match file names, case-sensitive wildcard characters '*' and '?'</param>
+        /// <param name="namePatternExclude">用于排除的文件名通配符 nagetive match file names, case-sensitive wildcard characters '*' and '?'</param>
+        /// <param name="limit">limit</param>
         /// <returns>Task&lt;IEnumerable&lt;BlobInfo&gt;&gt;.</returns>
-        public Task<IEnumerable<BlobInfo>> ListAsync()
+        public Task<DirectoryFileEntriesResponse> ListAsync(string lastFileName = null, string namePattern = null, string namePatternExclude = null, int limit = 100)
         {
-            var operation = new ListFilesOperation(Directory);
+            var operation = new ListFilesOperation(
+                path: Directory,
+                lastFileName: lastFileName,
+                namePattern: namePattern,
+                namePatternExclude: namePatternExclude,
+                limit: limit,
+                pretty: false
+                );
             return _executor.Execute(operation);
         }
-
+        ///// <summary>
+        /////     Lists this instance.
+        ///// </summary>
+        ///// <param name="lastFileName">用作游标的文件名，可以用来翻页（下一页）</param>
+        ///// <param name="namePattern">文件名通配符 match file names, case-sensitive wildcard characters '*' and '?'</param>
+        ///// <param name="namePatternExclude">用于排除的文件名通配符 nagetive match file names, case-sensitive wildcard characters '*' and '?'</param>
+        ///// <param name="limit">limit</param>
+        ///// <returns>Task&lt;IEnumerable&lt;BlobInfo&gt;&gt;.</returns>
+        //public Task<List<BlobInfo>> ListAsync(string lastFileName = null, string namePattern = null, string namePatternExclude = null, int limit = 100)
+        //{
+        //    var operation = new ListFilesOperation(
+        //        path: Directory,
+        //        lastFileName: lastFileName,
+        //        namePattern: namePattern,
+        //        namePatternExclude: namePatternExclude,
+        //        limit: limit,
+        //        pretty: false
+        //        );
+        //    return _executor.Execute(operation);
+        //}
         /// <summary>
         ///     Gets the specified BLOB information.
         /// </summary>
@@ -117,11 +149,33 @@ namespace SeaweedFs.Filer.Store.Catalog
         /// <param name="progress">The progress.</param>
         /// <returns>Task&lt;HttpResponseMessage&gt;.</returns>
         public async Task<bool> PushAsync(Blob blob, CancellationToken cancellationToken = default,
-            IProgress<int> progress = null)
+            IProgress<int> progress = null, IUploadFileOption uploadFileOption = null)
         {
-            await using var operation = new UploadFileOutboundStreamOperation(
-                Path.Combine(Directory, blob.BlobInfo.Name), blob.BlobInfo, blob.Content, cancellationToken, progress);
+#if NET5_0_OR_GREATER
+            await
+#endif
+                using var operation = new UploadFileOutboundStreamOperation(
+                Path.Combine(Directory, blob.BlobInfo.Name) + "?" + getQueryString(uploadFileOption), blob.BlobInfo, blob.Content, cancellationToken, progress);
             return await _executor.Execute(operation);
+        }
+
+        private string getQueryString(IUploadFileOption uploadFileOption)
+        {
+            if (uploadFileOption == null)
+                return string.Empty;
+            var paramList = new List<(string key, string value)>() {
+                ("collection",uploadFileOption.collection?.ToString()),
+                ("dataCenter",uploadFileOption.dataCenter?.ToString()),
+                ("maxMB",uploadFileOption.maxMB?.ToString()),
+                ("mode",uploadFileOption.mode?.ToString()),
+                ("op",uploadFileOption.op?.ToString()),
+                ("rack",uploadFileOption.rack?.ToString()),
+                ("replication",uploadFileOption.replication?.ToString()),
+                ("ttl",uploadFileOption.ttl?.ToString()),
+            }.Where(x => !string.IsNullOrEmpty(x.value))
+            .Select(x => $"{x.key}={Uri.EscapeDataString(x.value)}")
+            .ToList();
+            return string.Join("&", paramList);
         }
     }
 }
