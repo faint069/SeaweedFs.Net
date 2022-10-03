@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -37,6 +38,11 @@ namespace SeaweedFs.Http
         ///     The HTTP request message
         /// </summary>
         private readonly HttpRequestMessage _httpRequestMessage;
+        
+        /// <summary>
+        ///     List of parameters to be included in Url
+        /// </summary>
+        private List<string> _parameters = new List<string>( );
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="HttpRequestBuilder" /> class.
@@ -65,6 +71,19 @@ namespace SeaweedFs.Http
             return this;
         }
 
+        /// <summary>
+        /// Adds Parameter to request
+        /// </summary>
+        /// <param name="name">Parameter Name</param>
+        /// <param name="value">Parameter value. Serialized via System.Text.Json</param>
+        /// <returns></returns>
+        public IHttpRequestBuilder WithParameter( string name, object value )
+        {
+            var param = $"{name}={JsonSerializer.Serialize( value, SerializerOptions )}";
+            _parameters.Add( param );
+            return this;
+        }
+        
         /// <summary>
         ///     Withes the header.
         /// </summary>
@@ -121,6 +140,16 @@ namespace SeaweedFs.Http
         ///     Builds this instance.
         /// </summary>
         /// <returns>TRequest.</returns>
-        public HttpRequestMessage Build() => _httpRequestMessage;
+        public HttpRequestMessage Build()
+        {
+            if ( _parameters.Any() )
+            {
+                var uri = $"{_httpRequestMessage.RequestUri}?{string.Join( "&", _parameters )}";
+                _httpRequestMessage.RequestUri = new Uri( uri, UriKind.Relative );
+                return _httpRequestMessage;
+            }
+
+            return _httpRequestMessage;
+        }
     }
 }

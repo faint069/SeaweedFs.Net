@@ -34,6 +34,13 @@ namespace SeaweedFs.Http
         /// <returns>IHttpRequestBuilder.</returns>
         IHttpRequestBuilder WithRelativeUrl(string url);
         /// <summary>
+        /// Withes the parameter in URL
+        /// </summary>
+        /// <param name="name">Parameter name</param>
+        /// <param name="value">Parameter value. Serialized</param>
+        /// <returns></returns>
+        IHttpRequestBuilder WithParameter(string name, object value);
+        /// <summary>
         /// Withes the header.
         /// </summary>
         /// <param name="name">The name.</param>
