@@ -59,7 +59,6 @@ namespace SeaweedFs.Filer.Store.Catalog
         /// </summary>
         /// <value>The directory.</value>
         public string Directory { get; }
-
         /// <summary>
         ///     Deletes the asynchronous.
         /// </summary>
@@ -70,7 +69,16 @@ namespace SeaweedFs.Filer.Store.Catalog
             var operation = new DeleteOperation(Path.Combine(Directory, blobInfo.Name));
             return _executor.Execute(operation);
         }
-
+        /// <summary>
+        ///     Deletes all catalog
+        /// </summary>
+        /// <param name="recursive">Delete sub-dirs and their entries? </param>
+        /// <returns>Task</returns>
+        public Task<bool> DeleteCatalogAsync( bool recursive )
+        {
+            var operation = new DeleteCatalogOperation(Directory, recursive);
+            return _executor.Execute(operation);
+        }
         /// <summary>
         ///     Lists this instance.
         /// </summary>

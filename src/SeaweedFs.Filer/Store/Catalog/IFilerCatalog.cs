@@ -61,6 +61,13 @@ namespace SeaweedFs.Filer.Store.Catalog
         /// <param name="blobInfo">The BLOB information.</param>
         /// <returns>Task&lt;System.Boolean&gt;.</returns>
         Task<bool> DeleteAsync(BlobInfo blobInfo);
+
+        /// <summary>
+        ///     Deletes all files and sub-dirs in catalog the asynchronous.
+        /// </summary>
+        /// <param name="recursive">recursive delete files in sub-dirs</param>
+        /// <returns>Task&lt;System.Boolean&gt;.</returns>
+        Task<bool> DeleteCatalogAsync(bool recursive);
         /// <summary>
         ///     Lists this instance.
         /// </summary>
