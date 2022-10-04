@@ -123,5 +123,19 @@ namespace SeaweedFs.Filer
             serviceCollection.AddSingleton<Func<TService>>(x => () => x.GetService<TService>());
             return serviceCollection;
         }
+
+        /// <summary>
+        /// Create seaweedfs store without dependency injection
+        /// </summary>
+        /// <param name="address">Seaweedfs address</param>
+        /// <returns></returns>
+        public static IFilerStore CreateClient( string address )
+        {
+            var s = new ServiceCollection( )
+                    .AddSeaweedFiler( address )
+                    .BuildServiceProvider( );
+
+            return s.GetService<IFilerStore>( );
+        }
     }
 }
