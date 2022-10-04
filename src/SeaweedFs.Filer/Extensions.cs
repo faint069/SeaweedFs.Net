@@ -7,7 +7,6 @@
 // Last Modified On : 10-11-2021
 // ***********************************************************************
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
@@ -18,6 +17,9 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Mime;
+using Microsoft.Extensions.Http;
+using Microsoft.Extensions.Http.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace SeaweedFs.Filer
 {
@@ -122,6 +124,40 @@ namespace SeaweedFs.Filer
             serviceCollection.AddTransient<TService, TImplementation>();
             serviceCollection.AddSingleton<Func<TService>>(x => () => x.GetService<TService>());
             return serviceCollection;
+        }
+
+
+        /// <summary>
+        /// Create seaweedfs store without dependency injection
+        /// </summary>
+        /// <param name="address">Seaweedfs address</param>
+        /// <returns></returns>
+        public static IFilerStore CreateClient( string address )
+        {
+            var handler = new PolicyHttpMessageHandler( _ => HttpPolicyExtensions
+                                                             .HandleTransientHttpError( )
+                                                             .WaitAndRetryAsync( 6, retryAttempt =>
+                                                                                    TimeSpan
+                                                                                        .FromSeconds( Math
+                                                                                            .Pow( 2, retryAttempt ) ) )
+                                                      )
+                          {
+
+                              InnerHandler = new HttpClientHandler( )
+                          };
+
+            var httpClient = new HttpClient( handler )
+                    {
+                        BaseAddress = new Uri( address )
+                    };
+            
+            httpClient.DefaultRequestHeaders.Accept.Add( new MediaTypeWithQualityHeaderValue( "application/json" ) );
+
+            var fc  = new FilerClient( httpClient );
+            var fop = new FilerOperationsExecutor( fc );
+            var fs  = new FilerStore( fc, fop );
+
+            return fs;
         }
     }
 }
