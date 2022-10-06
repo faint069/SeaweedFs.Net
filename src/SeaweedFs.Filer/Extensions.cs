@@ -18,8 +18,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Mime;
 using Microsoft.Extensions.Http;
-using Microsoft.Extensions.Http.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace SeaweedFs.Filer
 {
